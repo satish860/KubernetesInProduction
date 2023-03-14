@@ -1,17 +1,21 @@
 containers: {
     "products-db": {
         image:"widgetario/products-db:21.03",
+        ports: "5432"
     }
 
     "products-api":{
         image:"widgetario/products-api:21.03",
+        ports:"80"
     }
 
     "stock-api":{
         image:"widgetario/stock-api:21.03",
+        ports:"8080"
     }
 
     web:{
         image:"widgetario/web:21.03",
+        ports: publish : "80/http"
     }
 }
