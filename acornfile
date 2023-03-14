@@ -1,21 +1,118 @@
 containers: {
     "products-db": {
         image:"widgetario/products-db:21.03",
-        ports: "5432"
+        ports: "5432",
+        env:{
+            "POSTGRES_PASSWORD": "secret://db-user-creds/password"
+        }
+
     }
 
     "products-api":{
         image:"widgetario/products-api:21.03",
-        ports:"80"
+        ports:"80",
+        files:{
+            "/app/config/db/application.properties" : "secret://api-db-secret/template"
+            "/app/config/application.properties": "secret://api-application-secret/template"
+        }
     }
 
     "stock-api":{
         image:"widgetario/stock-api:21.03",
         ports:"8080"
+        env:{
+            "POSTGRES_CONNECTION_STRING": "secret://stock-api-secret/POSTGRES_CONNECTION_STRING"
+        }
     }
 
     web:{
         image:"widgetario/web:21.03",
-        ports: publish : "80/http"
+        ports: publish : "80/http",
+        env:{
+            "Widgetario__Theme":"dark"
+        }
+        files:{
+            "/app/config/logging.json": "secret://logging/logging"
+            "/app/secrets/api.json":"secret://api/config"
+        }
     }
 }
+
+secrets: {
+    "logging":{
+        type:"template"
+        data:{
+            logging:"""
+                   {
+                        "Serilog": {
+                            "MinimumLevel": {
+                            "Default": "Warning",
+                            "Override": {
+                                "WiredBrain": "Information"
+                              }
+                            }
+                        }
+                    }
+            """
+        }
+    }
+
+    "api":{
+        type:"template"
+        data:{
+            config:"""
+                      {
+                        "Widgetario": {
+                            "ProductsApi": {
+                                    "Url": "http://products-api/products"
+                            },
+                            "StockApi": {
+                                    "Url": "http://stock-api:8080/stock"
+                            }
+                        }
+                    }
+            """
+        }
+    }
+
+    "db-user-creds":{
+        type:"basic"
+        data:{
+           
+        }
+    }
+    "api-db-secret":{
+        type:"template"
+        data:{
+            template:"""
+              spring.jpa.database=POSTGRESQL
+              spring.datasource.platform=postgres
+              spring.datasource.url=jdbc:postgresql://products-db:5432/postgres
+              spring.datasource.username=postgres
+              spring.datasource.password=${secret://db-user-creds/password}
+            """
+        }
+    }
+
+    "api-application-secret":{
+        type:"template"
+        data:{
+            template:"""
+              price.factor=1.5
+              logging.level.wiredbrain.products=DEBUG
+              server.port=80
+              spring.jpa.show-sql=true
+              spring.jpa.generate-ddl=true
+              spring.jpa.hibernate.ddl-auto=update
+            """
+        }
+    }
+
+    "stock-api-secret":{
+        type:"template"
+        data:{
+            POSTGRES_CONNECTION_STRING:"host=products-db port=5432 user=postgres password=${secret://db-user-creds/password} dbname=postgres sslmode=disable"
+        }
+    }
+}
+
