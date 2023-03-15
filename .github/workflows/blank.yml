@@ -33,5 +33,6 @@ jobs:
 
       - name: Build and Push
         run: |
+          ls
           acorn build --tag ghcr.io/${{ github.repository }}:1 .
           acorn push ghcr.io/${{ github.repository }}:1
