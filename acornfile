@@ -123,7 +123,6 @@ containers: {
                 init:false
                 dirs:{
                     "/var/log":"volume://log-data"
-                    "init-scripts":"./scripts"
                 }
             }
 
