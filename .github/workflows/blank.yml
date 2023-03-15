@@ -32,5 +32,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push
+        run: |
           acorn build --tag ghcr.io/${{ github.repository }}:1 .
           acorn push ghcr.io/${{ github.repository }}:1
