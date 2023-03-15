@@ -1,3 +1,23 @@
+args: {
+    includeReadiness:true
+    includeLiveness:true
+    includeResources:true
+    productApireplica:1
+    StockApireplica:1
+    webReplica:1
+}
+
+profiles: {
+    dev:{
+        includeLiveness:false
+        includeReadiness:false
+        includeResources:false
+        productApireplica:1
+        StockApireplica:1
+        webReplica:1
+    }
+}
+
 containers: {
     "products-db": {
         image:"widgetario/products-db:21.03",
@@ -5,36 +25,117 @@ containers: {
         env:{
             "POSTGRES_PASSWORD": "secret://db-user-creds/password"
         }
+        dirs:{
+            "/var/lib/postgresql/data":"volume://db-data"
+        }
+         if args.includeReadiness{
+        probes:{
+                "readiness": {
+                    // Configure an Exec liveness probe
+                    exec: {
+                        command: ["pg_isready","-h","localhost"]
+                    }
+                }
+            }
+        }
 
     }
 
     "products-api":{
         image:"widgetario/products-api:21.03",
         ports:"80",
+        memory: 512Mi
+        scale:args.productApireplica
         files:{
             "/app/config/db/application.properties" : "secret://api-db-secret/template"
             "/app/config/application.properties": "secret://api-application-secret/template"
+        }
+         if args.includeLiveness{
+        probes:{
+         
+            "liveness":{
+                    http:{
+                        url:"/"
+                    }
+                    initialDelaySeconds: 20
+                    periodSeconds: 20
+                    failureThreshold: 1
+                }
+          }
         }
     }
 
     "stock-api":{
         image:"widgetario/stock-api:21.03",
         ports:"8080"
+        scale:args.StockApireplica
         env:{
             "POSTGRES_CONNECTION_STRING": "secret://stock-api-secret/POSTGRES_CONNECTION_STRING"
+        }
+        dependsOn: ["products-db"]
+        if args.includeLiveness{
+        probes:{
+          
+            "liveness":{
+                    http:{
+                        url:"/healthz"
+                    }
+                    initialDelaySeconds: 20
+                    periodSeconds: 60
+                    failureThreshold: 3
+                }
+          }
         }
     }
 
     web:{
-        image:"widgetario/web:21.03",
+        image:"widgetario/web:21.03-v2",
         ports: publish : "80/http",
+        scale:args.webReplica
+        if args.includeLiveness{
+        probes:{
+        
+            "liveness":{
+                http:{
+                    url:"/up"
+                }
+                initialDelaySeconds: 20
+                periodSeconds: 5
+                failureThreshold: 1
+            }
+          }
+        }
         env:{
             "Widgetario__Theme":"dark"
+            "Widgetario__Debug": "true"
         }
         files:{
             "/app/config/logging.json": "secret://logging/logging"
             "/app/secrets/api.json":"secret://api/config"
         }
+        dirs:{
+            "/logs":"volume://log-data"
+        }
+        sidecars:{
+            "log-container":{
+                image: "alpine"
+                command: ["sh", "-c", "tail -f /var/log/app.log"]
+                init:false
+                dirs:{
+                    "/var/log":"volume://log-data"
+                }
+            }
+        }
+    }
+}
+
+volumes: {
+    "log-data":{
+        class: "ephemeral" 
+    }
+     "db-data": {
+        size: 10G
+        accessModes: "readWriteOnce"
     }
 }
 
