@@ -123,6 +123,17 @@ containers: {
                 init:false
                 dirs:{
                     "/var/log":"volume://log-data"
+                    "init-scripts":"./scripts"
+                }
+            }
+
+            "initalize-container":{
+                image: "alpine"
+                init:true
+                command:"/init-scripts/filecheck.sh"
+                dirs:{
+                    "/var/log":"volume://log-data"
+                    "init-scripts":"./scripts"
                 }
             }
         }
