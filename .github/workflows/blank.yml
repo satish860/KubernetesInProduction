@@ -33,5 +33,5 @@ jobs:
 
       - name: Build and Push
         run: |
-          acorn build --file acornfile --tag ghcr.io/${{ github.repository }} .
-          acorn push ghcr.io/${{ github.repository }}
+          acorn build --file acornfile --tag ghcr.io/${{ github.actor }}/widgetraio .
+          acorn push ghcr.io/${{ github.actor }}/widgetraio
