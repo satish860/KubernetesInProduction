@@ -137,6 +137,16 @@ containers: {
             }
         }
     }
+
+    elasticsearch:{
+        image:"widgetario/elasticsearch:7.10"
+        ports: "9200",
+    }
+
+    kibana:{
+        image:"widgetario/kibana:7.10"
+        ports:publish: "5601/http"
+    }
 }
 
 volumes: {
